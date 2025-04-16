@@ -1,0 +1,58 @@
+body {
+    font-family: Cambria;
+    margin: auto;
+    width: 1200px;
+    font-size: 18px
+}
+.zahlen-container {
+        display:grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 10px;
+}
+.zahlen {
+    text-align: center;
+}
+
+h2 {
+    color: #3163A8;
+    padding-top: 60px;
+    padding-bottom: 60px;
+}
+.kontaktueberschrift {
+    margin-bottom: 20px;
+}
+.wichtig {
+    text-align: center;
+}
+ul {
+    display: inline-block;
+    text-align: left;
+}
+.besuch {
+    text-align: center;
+    margin-top: 100px;
+}
+
+footer {
+    border-top: 2px solid #3163A8;
+    padding: 10px 20px;
+}
+footer ul {
+    display: flex;
+    justify-content: center;
+    list-style-type: none;
+    gap: 15px;
+}
+footer li {
+    position: relative;
+    padding-left: 15px;
+}
+footer li::before {
+    content: "|";
+    position: absolute;
+    left: 0;
+    color: #3163A8;
+}
+footer li:first-child::before {
+    content: "";
+}
