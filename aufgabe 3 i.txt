@@ -1,0 +1,6 @@
+<label for="rating_type">Bewertung:</label> <!-- i) Top/Flop Bewertung -->
+    <select name="rating_type" id="rating_type">
+        <option value=""> Alle </option>
+        <option value="top" <?php if(($_GET['rating_type'] ?? '') === 'top') echo 'selected'; ?>>Top</option>
+        <option value="flop" <?php if(($_GET['rating_type'] ?? '') === 'flop') echo 'selected'; ?>>Flop</option>
+    </select>
