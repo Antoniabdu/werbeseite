@@ -1,0 +1,55 @@
+<?php
+            // Verbindung zur Datenbank
+            $link = mysqli_connect("localhost", "root", "Knopka777aaa", "emensawerbeseite");
+
+            if (!$link) {
+                echo "Verbindung fehlgeschlagen: " . mysqli_connect_error();
+                exit();
+            }
+
+            // Sortierreihenfolge aus URL (Standard: ASC)
+            $sort = (isset($_GET['sort']) && $_GET['sort'] === 'desc') ? 'DESC' : 'ASC';
+            $toggleSort = ($sort === 'ASC') ? 'desc' : 'asc';
+
+            // Immer die alphabetisch ersten 5 Gerichte aus der Datenbank laden (ASC fix)
+            $sql = "SELECT name, preisintern, preisextern FROM gericht ORDER BY name ASC LIMIT 5";
+            $result = mysqli_query($link, $sql);
+
+            $gerichte = [];
+
+            if ($result && mysqli_num_rows($result) > 0) {
+                while ($row = mysqli_fetch_assoc($result)) {
+                    $gerichte[] = $row;
+                }
+                mysqli_free_result($result);
+            } else {
+                echo "Keine Gerichte gefunden.";
+                exit();
+            }
+
+            mysqli_close($link);
+
+            // PHP-Sortierung bei Bedarf (nur wenn DESC gewünscht)
+            if ($sort === 'DESC') {
+                usort($gerichte, function($a, $b) {
+                    return strcmp($b['name'], $a['name']);
+                });
+            }
+
+            // Sortierlink anzeigen
+            echo "<p><a href='?sort=$toggleSort'>Sortierung ändern (" . ($sort === 'ASC' ? 'aufsteigend' : 'absteigend') . ")</a></p>";
+
+            // Tabelle ausgeben
+            echo "<table border='1' cellpadding='8'>";
+            echo "<tr><th>Name</th><th>Preis intern (€)</th><th>Preis extern (€)</th></tr>";
+
+            foreach ($gerichte as $gericht) {
+                echo "<tr>";
+                echo "<td>" . htmlspecialchars($gericht['name']) . "</td>";
+                echo "<td>" . htmlspecialchars(number_format($gericht['preisintern'], 2, ',', '')) . "</td>";
+                echo "<td>" . htmlspecialchars(number_format($gericht['preisextern'], 2, ',', '')) . "</td>";
+                echo "</tr>";
+            }
+
+            echo "</table>";
+            ?>
