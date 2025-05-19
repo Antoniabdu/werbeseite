@@ -1,0 +1,33 @@
+<?php
+// Verbindung zur Datenbank
+$link = mysqli_connect("localhost", "root", "root", "emensawerbeseite");
+
+if (!$link) {
+    echo "Verbindung fehlgeschlagen: " . mysqli_connect_error();
+    exit();
+}
+
+// SQL: 5 alphabetisch sortierte Gerichte
+$sql = "SELECT name, preisintern, preisextern FROM gericht ORDER BY name ASC LIMIT 5";
+$result = mysqli_query($link, $sql);
+
+if ($result && mysqli_num_rows($result) > 0) {
+    echo "<table border='1' cellpadding='8'>";
+    echo "<tr><th>Name</th><th>Preis intern (€)</th><th>Preis extern (€)</th></tr>";
+
+    while ($row = mysqli_fetch_assoc($result)) {
+        echo "<tr>";
+        echo "<td>" . htmlspecialchars($row['name']) . "</td>";
+        echo "<td>" . htmlspecialchars(number_format($row['preisintern'], 2)) . "</td>";
+        echo "<td>" . htmlspecialchars(number_format($row['preisextern'], 2)) . "</td>";
+        echo "</tr>";
+    }
+
+    echo "</table>";
+} else {
+    echo "Keine Gerichte gefunden.";
+}
+
+mysqli_free_result($result);
+mysqli_close($link);
+?>
