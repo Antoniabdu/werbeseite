@@ -1,0 +1,36 @@
+SELECT * FROM gericht;
+
+SELECT erfasst_am, name FROM gericht;
+
+SELECT erfasst_am, name AS Gerichtname FROM gericht
+ORDER BY name DESC;
+
+SELECT name, beschreibung FROM gericht
+ORDER BY name ASC
+LIMIT 5;
+
+SELECT DISTINCT typ FROM allergen;
+
+SELECT name, beschreibung FROM gericht
+ORDER BY name ASC
+LIMIT 10 OFFSET 5;
+
+SELECT name FROM gericht
+WHERE name LIKE 'L%' OR name LIKE 'l%';
+
+SELECT id, name FROM gericht
+WHERE LOWER(name) LIKE '%suppe%'
+ORDER BY name DESC;
+
+SELECT * FROM kategorie
+WHERE eltern_id IS NULL;
+
+UPDATE allergen
+SET name = 'Kamut'
+WHERE code = 'a6';
+
+INSERT INTO gericht (id, name, beschreibung, erfasst_am, vegan, vegetarisch, preisintern, preisextern)
+VALUES (21, 'Currywurst mit Pommes', 'Beliebtes Gericht mit würziger Soße', CURDATE(), 0, 0, 2.8, 4.5);
+
+INSERT INTO gericht_hat_kategorie (gericht_id, kategorie_id)
+VALUES (21, 3);
