@@ -1,0 +1,33 @@
+SELECT g.name AS gericht, a.name AS allergen
+FROM gericht g
+         JOIN gericht_hat_allergen gha ON g.id = gha.gericht_id
+         JOIN allergen a ON gha.code = a.code
+ORDER BY g.name;
+
+SELECT g.name AS gericht, a.name AS allergen
+FROM gericht g
+         LEFT JOIN gericht_hat_allergen gha ON g.id = gha.gericht_id
+         LEFT JOIN allergen a ON gha.code = a.code
+ORDER BY g.name;
+
+SELECT g.name AS gericht, a.name AS allergen
+FROM allergen a
+         LEFT JOIN gericht_hat_allergen gha ON a.code = gha.code
+         LEFT JOIN gericht g ON gha.gericht_id = g.id
+ORDER BY a.name;
+
+SELECT k.name AS kategorie, COUNT(g.id) AS anzahl_gerichte
+FROM gericht g
+         JOIN gericht_hat_kategorie ghk ON g.id = ghk.gericht_id
+         JOIN kategorie k ON ghk.kategorie_id = k.id
+GROUP BY k.id
+ORDER BY anzahl_gerichte ASC;
+
+
+SELECT k.name AS kategorie, COUNT(g.id) AS anzahl_gerichte
+FROM gericht g
+         JOIN gericht_hat_kategorie ghk ON g.id = ghk.gericht_id
+         JOIN kategorie k ON ghk.kategorie_id = k.id
+GROUP BY k.id
+HAVING COUNT(g.id) > 2
+ORDER BY anzahl_gerichte ASC;
