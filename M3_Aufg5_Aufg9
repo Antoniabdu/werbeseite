@@ -1,0 +1,356 @@
+<?php
+
+$link = mysqli_connect("localhost", "root", "Knopka777aaa", "emensawerbeseite");
+if (!$link) {
+    die("Verbindung fehlgeschlagen: " . mysqli_connect_error());
+}
+
+
+// IP-Adresse des Besuchers
+$ip = $_SERVER['REMOTE_ADDR'];
+$heute = date('Y-m-d');
+
+// Prüfen, ob IP heute schon gespeichert wurde
+$sql = "SELECT COUNT(*) AS anzahl FROM besucher WHERE ip_address = ? AND besuchsdatum = ?";
+$stmt = mysqli_prepare($link, $sql);
+mysqli_stmt_bind_param($stmt, 'ss', $ip, $heute);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$row = mysqli_fetch_assoc($result);
+
+// Falls noch nicht vorhanden: Eintrag hinzufügen
+if ($row['anzahl'] == 0) {
+    $eintrag_sql = "INSERT INTO besucher (ip_address, besuchsdatum) VALUES (?, ?)";
+    $stmt_insert = mysqli_prepare($link, $eintrag_sql);
+    mysqli_stmt_bind_param($stmt_insert, 'ss', $ip, $heute);
+    mysqli_stmt_execute($stmt_insert);
+}
+
+mysqli_query($link, "INSERT INTO besucher () VALUES ()");    //Jeden Besuch zählen auch bei gleicher IP
+
+
+$besucheQuery = mysqli_query($link, "SELECT COUNT(*) AS anzahl FROM besucher");    //Gesamtzahl Besuche aus DB
+$besucheRow = mysqli_fetch_assoc($besucheQuery);
+$besuche = $besucheRow['anzahl'];
+
+
+$ip = $_SERVER['REMOTE_ADDR'];
+$heute = date('Y-m-d');
+$logFile = 'besucher_ip_log.txt';
+
+$neuerBesuch = true;
+$zeilen = [];
+
+if (file_exists($logFile)) {
+    $zeilen = file($logFile, FILE_IGNORE_NEW_LINES);
+    foreach ($zeilen as $zeile) {
+        list($geloggteIp, $datum) = explode('|', $zeile);
+        if ($geloggteIp === $ip && $datum === $heute) {
+            $neuerBesuch = false;
+            break;
+        }
+    }
+}
+
+if ($neuerBesuch) {
+    $zeilen[] = "$ip|$heute";
+    file_put_contents($logFile, implode("\n", $zeilen));
+}
+
+$einmaligeBesucheHeute = count(array_filter($zeilen, function($z) use ($heute) {
+    return strpos($z, "|$heute") !== false;
+}));
+
+
+
+$gerichte_sql = "SELECT COUNT(*) AS anzahl FROM gericht";              //Gerichte zählen mit Datenbank
+$result = mysqli_query($link, $gerichte_sql);
+$row = mysqli_fetch_assoc($result);
+$anzahlGerichte = $row['anzahl'];
+
+
+
+$newsletterFile = 'newsletter_anmeldungen.txt';
+$anmeldungen = 0;                                       //Anzahl Newsletteranmeldungen
+if (file_exists($newsletterFile)) {
+    $anmeldungen = count(file($newsletterFile));
+}
+
+?>
+
+
+
+
+    <!DOCTYPE html>
+    <!--
+        - Praktikum DBWT. Autoren:
+        - Alice, Kelberer, 3731224
+        - Antonia, Badelt, 3728150
+    -->
+    <html lang="de">
+    <head>
+        <meta charset="UTF-8">
+        <title>E-Mensa</title>
+        <link rel="stylesheet" type="text/css" href="stylesheet.css" />
+    </head>
+    <body>
+
+    <header>
+        <nav class="navbar">
+            <ul>
+                <li><a href="#Ankündigungen">Ankündigungen</a></li>
+                <li><a href="#Speisen">Speisen</a></li>
+                <li><a href="#zahlen">Zahlen</a></li>
+                <li><a href="#kontakt">Newsletter</a></li>
+                <li><a href="#wichtigfueruns">Wichtig für uns</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <div class="titelbild">
+            <h1>E-Mensa</h1>
+        </div>
+        <section id="Neuigkeiten">
+            <div id="Ankündigungen">
+                <h2>Bald gibt es auch Essen online!</h2>
+                <p class="ankündigungenInfoText">Wir freuen uns, dir mitteilen zu können, dass du dein Essen bei der E-Mensa bald auch online vorbestellen kannst! Damit wird dein Mensa-Besuch noch bequemer, schneller und moderner.
+                    Egal ob vom Laptop zu Hause oder vom Handy unterwegs – du kannst schon im Voraus sehen, was es gibt, und dein Lieblingsgericht mit nur wenigen Klicks sichern.
+                    Wartezeiten in der Schlange gehören damit bald der Vergangenheit an.<br> Unsere neue Online-Plattform sorgt dafür, dass du dein Essen zum gewünschten Zeitpunkt frisch zubereitet bekommst
+                    – perfekt, wenn du einen vollen Stundenplan hast oder einfach keine Zeit verlieren willst.</p>
+            </div>
+            <?php echo "Test"; ?>
+
+
+
+
+
+
+
+            <?php
+            $link = mysqli_connect("localhost", "root", "Knopka777aaa", "emensawerbeseite");
+
+            if (!$link) {
+                echo "Verbindung fehlgeschlagen: " . mysqli_connect_error();
+                exit();
+            }
+
+            $sort = (isset($_GET['sort']) && $_GET['sort'] === 'desc') ? 'DESC' : 'ASC';
+            $toggleSort = ($sort === 'ASC') ? 'desc' : 'asc';
+
+            // Immer alphabetisch erste 5 Gerichte holen (ASC fix)
+            $sql = "SELECT id, name, preisintern, preisextern FROM gericht ORDER BY name ASC LIMIT 5";
+            $result = mysqli_query($link, $sql);
+
+            $gerichte = [];
+
+            if ($result && mysqli_num_rows($result) > 0) {
+                while ($row = mysqli_fetch_assoc($result)) {
+                    $gerichte[] = $row;
+                }
+                mysqli_free_result($result);
+            } else {
+                echo "Keine Gerichte gefunden.";
+                exit();
+            }
+
+            // Sortieren, wenn DESC
+            if ($sort === 'DESC') {
+                usort($gerichte, function($a, $b) {
+                    return strcmp($b['name'], $a['name']);
+                });
+            }
+
+            // Allergene je Gericht sammeln
+            $allergene_pro_gericht = [];
+            $alle_verwendeten_allergene = [];
+
+            foreach ($gerichte as $gericht) {
+                $id = (int)$gericht['id'];
+                $sql_allergene = "SELECT code FROM gericht_hat_allergen WHERE gericht_id = $id";
+                $res = mysqli_query($link, $sql_allergene);
+
+                $codes = [];
+                if ($res && mysqli_num_rows($res) > 0) {
+                    while ($a = mysqli_fetch_assoc($res)) {
+                        $codes[] = $a['code'];
+                        $alle_verwendeten_allergene[$a['code']] = true;
+                    }
+                    mysqli_free_result($res);
+                }
+                $allergene_pro_gericht[$id] = $codes;
+            }
+
+            mysqli_close($link);
+
+            // Tabelle anzeigen
+            echo "<p><a href='?sort=$toggleSort'>Sortierung ändern (" . ($sort === 'ASC' ? 'aufsteigend' : 'absteigend') . ")</a></p>";
+
+            echo "<table border='1' cellpadding='8'>";
+            echo "<tr><th>Name</th><th>Preis intern (€)</th><th>Preis extern (€)</th><th>Allergene</th></tr>";
+
+            foreach ($gerichte as $gericht) {
+                $id = $gericht['id'];
+                echo "<tr>";
+                echo "<td>" . htmlspecialchars($gericht['name']) . "</td>";
+                echo "<td>" . htmlspecialchars(number_format($gericht['preisintern'], 2, ',', '')) . "</td>";
+                echo "<td>" . htmlspecialchars(number_format($gericht['preisextern'], 2, ',', '')) . "</td>";
+
+                $allergeneText = !empty($allergene_pro_gericht[$id])
+                    ? implode(', ', $allergene_pro_gericht[$id])
+                    : 'Keine';
+
+                echo "<td>" . htmlspecialchars($allergeneText) . "</td>";
+                echo "</tr>";
+            }
+
+            echo "</table>";
+
+            // Liste aller verwendeten Allergen-Codes
+            if (!empty($alle_verwendeten_allergene)) {
+                echo "<h3>Verwendete Allergene:</h3>";
+                echo "<ul>";
+                foreach (array_keys($alle_verwendeten_allergene) as $code) {
+                    echo "<li>" . htmlspecialchars($code) . "</li>";
+                }
+                echo "</ul>";
+            } else {
+                echo "<p>Keine Allergene verwendet.</p>";
+            }
+            ?>
+
+
+
+
+
+
+
+
+
+
+
+            <div id="zahlen">
+
+                <div class="zahlenueberschrift">
+                    <h2>E-Mensa in Zahlen</h2>
+                </div>
+                <div class="zahlen-container">
+                    <div class="zahlen"><?php echo $besuche; ?> Besuche</div>
+                    <div class="zahlen"><?php echo $einmaligeBesucheHeute; ?> einmalige Besuche heute</div> <!-- IP-Zähler -->
+                    <div class="zahlen"><?php echo $anmeldungen; ?> Anmeldungen zum Newsletter</div>    <!-- Platzhalter austauschen -->
+                    <div class="zahlen"><?php echo $anzahlGerichte; ?> Speisen</div>
+                </div>
+            </div>
+
+            <div id="kontakt">
+                <div class="kontaktueberschrift">
+                    <h2>Interesse geweckt? Wir informieren Sie!</h2>
+                </div>
+
+                <form method="POST" action="m3_5_9_werbeseite.php">
+                    <fieldset class="formularrand">
+                        <label for="vornamefeld">Ihr Name:*</label><br>
+                        <input type="text" id="vornamefeld" name="vorname" maxlength="20" placeholder="Vorname" required><br><br>
+
+                        <label for="e-Mail">Ihre E-Mail*</label><br>
+                        <input type="email" id="e-Mail" name="e-mail" maxlength="40" placeholder="vorname.nachname@alumni.fh-aachen.de" required><br><br>
+
+                        <label>Newsletter bitte in:</label>
+                        <select name="newsletter">
+                            <option value="1">Deutsch</option>
+                            <option value="2">Englisch</option>
+                            <option value="3">Russisch</option>
+                            <option value="4">Französisch</option>
+                            <option value="5">Chinesisch</option>
+                        </select><br><br>
+
+                        <input type="checkbox" id="datenschutz" name="datenschutz" value="1" required>
+                        <label for="datenschutz">Den Datenschutzbestimmungen stimme ich zu*</label><br><br>
+
+                        <input type="submit" value="Zum Newsletter anmelden"><br><br>
+
+                        <label>* Eingaben sind Pflicht</label>
+                    </fieldset>
+                </form>
+
+            </div>
+
+            <div id="wichtigfueruns">
+                <div class="wichtigueberschrift">
+                    <h2>Das ist uns wichtig</h2>
+                </div>
+
+                <div class="wichtig">
+                    <ul>
+                        <li>Beste frische saisonale Zutaten</li>
+                        <li>Ausgewogene abwechslungsreiche Gerichte</li>
+                        <li>Sauberkeit</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="besuch">
+                <h2>Wir freuen uns auf Ihren Besuch!</h2>
+            </div>
+        </section>
+    </main>
+
+
+
+    <footer>
+        <ul>
+            <li>(c) E-Mensa GmbH</li>
+            <li>Alice Kelberer & Antonia Badelt </li>
+            <li>Impressum</li>
+        </ul>
+    </footer>
+
+
+
+    </body>
+    </html>
+
+<?php
+
+
+
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Benutzereingaben
+    $name = trim($_POST['vorname']); //$_POST["vorname"] ?? '': Holt den Namen aus dem Formular
+    $email = trim($_POST['e-mail']); //$_POST["e-mail"] ?? '': Holt die E-mail aus dem Formular
+    $newsletterSprache = $_POST['newsletter'];
+    $datenschutz = isset($_POST['datenschutz']); // Checkbox wird als true übermittelt, wenn aktiviert
+
+    // Fehlerprüfungen
+    $fehler = []; //Leeres Array, in dem mögliche Fehlermeldungen gesammelt werden.
+
+
+    if ($name === '' || strlen(trim($name)) === 0) {
+        $fehler[] = "Bitte geben Sie einen gültigen Namen ein.";
+    }
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $fehler[] = "Ihre E-Mail-Adresse ist ungültig."; //filter_var() mit dem Filter FILTER_VALIDATE_EMAIL prüft, ob die E-Mail gültig ist
+    }
+    if (preg_match('/@(trashmail\.com|trashmail\.de|wegwerfmail\.de)$/', $email)) { //preg_match() sucht nach einem bestimmten Muster in einer Zeichenkette und gibt zurück, ob das Muster gefunden wurde oder nicht.
+        $fehler[] = "Bitte verwenden Sie keine Wegwerf-E-Mail-Adressen.";
+    }
+    if (!$datenschutz) {
+        $fehler[] = "Sie müssen den Datenschutzbestimmungen zustimmen.";
+    }
+
+    if (empty($fehler)) {
+        // Daten in einer Textdatei speichern
+        $eintrag = "$name, $email, $newsletterSprache\n";
+
+        // Datei anhängen (TEXTDATEI)
+        file_put_contents("newsletter_anmeldungen.txt", $eintrag, FILE_APPEND);
+
+        echo "Vielen Dank für Ihre Anmeldung, $name!";
+    } else {
+        // Fehler ausgeben
+        foreach ($fehler as $error) {
+            echo $error . "<br>";
+        }
+    }
+}
+?>
