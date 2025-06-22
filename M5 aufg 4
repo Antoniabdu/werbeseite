@@ -1,0 +1,97 @@
+
+in newsletter-count-block render php
+<?php
+/**
+ * @see https://github.com/WordPress/gutenberg/blob/trunk/docs/reference-guides/block-api/block-metadata.md#render
+ * We get three variables with additional information exposed in the render script:
+ *
+ * $attributes (array): The block attributes.
+ * $content (string): The block default content.
+ * $block (WP_Block): The block instance.
+ *
+ * This block displays the number of registrations to the newsletter.
+ */
+
+/**
+ * @see https://developer.wordpress.org/reference/classes/wpdb/
+ */
+
+global $wpdb;
+$table = $wpdb->prefix . 'newsletter';
+$count = $wpdb->get_var("SELECT COUNT(*) FROM $table");
+
+echo '<div style="margin-bottom: 2rem;">';
+
+    // ARRAY_N: Ergebnis als nummeriertes Array
+    // ARRAY_A: Ergebnis als assoziatives Array
+    // $result = $wpdb->get_results("SELECT...",ARRAY_N);
+
+echo "<p>$count Anmeldungen zum Newsletter</p>";
+
+echo '</div>';
+
+in meals-counter-block render php
+
+<?php
+/**
+ * @see https://github.com/WordPress/gutenberg/blob/trunk/docs/reference-guides/block-api/block-metadata.md#render
+ * We get three variables with additional information exposed in the render script:
+ *
+ * $attributes (array): The block attributes.
+ * $content (string): The block default content.
+ * $block (WP_Block): The block instance.
+ *
+ * Since our meals-block doesn't have any content that it handles (it's merely a render callback), only the last
+ */
+
+/**
+ * @see https://developer.wordpress.org/reference/functions/wp_count_posts/
+ * Post-Type ist hier meals
+ */
+
+$post_type = 'meals';
+
+// TODO: hier die Anzahl veröffentlichter Meals-Posts abfragen
+
+
+// Anzahl veröffentlichter "meals"-Beiträge abrufen
+$count = wp_count_posts('meals')->publish;
+
+// HTML-Ausgabe
+echo "<p>$count veröffentlichte Gerichte</p>";
+
+in meals-block render php
+
+<?php
+/**
+ * @see https://github.com/WordPress/gutenberg/blob/trunk/docs/reference-guides/block-api/block-metadata.md#render
+ * We get three variables with additional information exposed in the render script:
+ *
+ * $attributes (array): The block attributes.
+ * $content (string): The block default content.
+ * $block (WP_Block): The block instance.
+ *
+ * Since our meals-block doesn't have any content that it handles (it's merely a render callback), only the last
+ * one is set.
+ */
+
+/**
+ * @see https://developer.wordpress.org/reference/classes/wpdb/
+ */
+
+global $wpdb;
+
+    $results = $wpdb->get_results("SELECT * FROM gericht", ARRAY_N);
+
+	if ($results) :
+		?>
+        <ul class="emensa-meals-list">
+		<?php foreach ( $results as $result ) : ?>
+        <li>
+			<?php echo $result[1]; ?>
+        </li>
+	<?php endforeach; ?>
+        </ul>
+	<?php endif; ?>
+
+
